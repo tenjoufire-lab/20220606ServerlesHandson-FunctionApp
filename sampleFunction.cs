@@ -30,8 +30,7 @@ namespace Company.Function
 
             await document.AddAsync(new { Name = name, id = Guid.NewGuid() });
 
-            return new OkObjectResult("success");
-
+            return new OkObjectResult($"success, {name}");
         }
     }
 }
