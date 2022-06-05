@@ -7,6 +7,9 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Microsoft.Azure.WebJobs.Extensions.CosmosDB;
+using Microsoft.Azure.WebJobs.Host;
+
 
 namespace Company.Function
 {
@@ -15,21 +18,20 @@ namespace Company.Function
         [FunctionName("sampleFunction")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
+            [CosmosDB(
+                databaseName: "ToDoList",
+                containerName: "Items",
+                Connection = "CosmosDBConnection")]IAsyncCollector<dynamic> document,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
-            string name = req.Query["name"];
+            string name = string.IsNullOrEmpty(req.Query["name"])?"default":req.Query["name"];
 
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
-            name = name ?? data?.name;
+            await document.AddAsync(new { Name = name, id = Guid.NewGuid() });
 
-            string responseMessage = string.IsNullOrEmpty(name)
-                ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-                : $"Hello, {name}. This HTTP triggered function executed successfully.";
+            return new OkObjectResult("success");
 
-            return new OkObjectResult(responseMessage);
         }
     }
 }
